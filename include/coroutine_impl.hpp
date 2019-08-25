@@ -4,7 +4,7 @@
 #include <vector>
 #include <list>
 #ifndef STACKSIZE
-#define STACKSIZE 1024<<10
+#define STACKSIZE (1024<<10)
 #endif
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 // windows
@@ -13,7 +13,8 @@
 #elif defined(__linux__) || defined(__linux)
 // linux
 #include <ucontext.h>
-#define __LIN
+#include <cstring>
+#define __LIN 1
 #endif
 
 using co_id = uint32_t;
@@ -23,7 +24,7 @@ enum Status
 	COROUTINE_DEAD,
 	COROUTINE_READY,
 	COROUTINE_RUNNING,
-	COROUTINE_SUSPEND
+	COROUTINE_SUSPEND,
 };
 #ifdef __WIN	
 class CoroutineCtx
@@ -189,23 +190,21 @@ public:
 	{
 		status = Status::COROUTINE_SUSPEND;
 	}
-	inline Status Status()
+	Status Status()
 	{
 		return status;
 	}
-	~CoroutineCtx()
-	{
-	}
+
 };
 
 class Schedule
 {
+public:
 	std::vector<CoroutineCtx*>cos;
 	std::list<co_id> indexes;
 	char stack[STACKSIZE];
 	co_id current;
 	ucontext_t main_ctx;
-public:
 	Schedule()
 	{
 		current = 0;
@@ -329,7 +328,7 @@ inline void _yield()
 	CoroutineCtx* ctx = lc_schedule.cos[id - 1];
 	assert(ctx != nullptr);
 
-	char* stack_top = lc_schedule->stack + STACKSIZE;
+	char* stack_top = lc_schedule.stack + STACKSIZE;
 	_save_stack(ctx, stack_top);
 
 	ctx->Suspend();
