@@ -1,0 +1,7 @@
+INCLUDE_DIRECTORIES(../include)
+
+file(GLOB SRC_LIST ./*.cpp)
+
+#add_library(CTT SHARED ${SRC_LIST} ${PLATFORM_SRC_LIST})
+#add_library(CTT STATIC ${SRC_LIST} ${PLATFORM_SRC_LIST})
+#set_property(TARGET CTT PROPERTY CXX_STANDARD 11)
