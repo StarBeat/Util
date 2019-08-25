@@ -3,3 +3,6 @@ build/
 CMakeFiles/
 ./CMakeCache.txt
 ./*.cmake
+test/*.cmake
+test/*.vcxproj
+test/*.vcxproj.filters
