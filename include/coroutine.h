@@ -53,6 +53,8 @@ coroutine_t coroutine::create(std::function<void()> func)
 
 void coroutine::destroy(coroutine_t ct)
 {
+	delete ct.udr;
+	delete ct.udy;
 	_destroy(ct.id);
 }
 
