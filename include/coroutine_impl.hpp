@@ -56,7 +56,10 @@ public:
 	}
 	~CoroutineCtx()
 	{
-		DeleteFiber(fiber);
+		if(nullptr != fiber)
+		{
+			DeleteFiber(fiber);
+		}
 	}
 };
 
@@ -309,17 +312,17 @@ inline int _resume(co_id id)
 static void _save_stack(CoroutineCtx* ctx, char* top) { // 这个函数用于保存堆栈的信息
 		// 需要注意的是，栈是从高位向低位生长
 		// 所以，top表示的是其实是堆栈的底部，虽然它的地址最高
-	char stack_bottom = 0; // 这个真的很有意思，dummy的位置一定是栈栈的顶部，因为现在我们仍然在coroutine的堆栈里
-	assert(top - &stack_bottom <= STACKSIZE); // top - &dummy恰好是栈的大小
-	if (ctx->capacity < top - &stack_bottom) { // 第一次保存的时候,C->cap为0,C->stack为NULL
-		// 注意区分C->stack和C->ctk->uc_stack.ss_sp，这两者不是同一个东西，前面的C->ctk->uc_stack.ss_sp设置成了schedule的stack
-		free(ctx->stack); // 先清空栈，如果c->stack为NULL，那么free什么也不干，这是规定
+	char stack_bottom = 0; // 这个真的很有意思，stack_bottom的位置一定是栈栈的顶部，因为现在我们仍然在coroutine的堆栈里
+	assert(top - &stack_bottom <= STACKSIZE); // top - &stack_bottom恰好是栈的大小
+	if (ctx->capacity < top - &stack_bottom) { 
+		// 前面的ctx->ctk->uc_stack.ss_sp设置成了schedule的stack
+		free(ctx->stack);
 		ctx->capacity = top - &stack_bottom;
-		ctx->stack = (char*)malloc(ctx->capacity); // 这里出现了malloc
+		ctx->stack = (char*)malloc(ctx->capacity); // 申请保存栈的空间
 	}
 	ctx->stack_size = top - &stack_bottom;
-	// 也就是说&dummy在低位
-	memcpy(ctx->stack, &stack_bottom, ctx->stack_size); // 其实就是清空C->stack的意思是吧！
+	// 也就是说&stack_bottom在低位
+	memcpy(ctx->stack, &stack_bottom, ctx->stack_size); 
 }
 
 inline void _yield()
