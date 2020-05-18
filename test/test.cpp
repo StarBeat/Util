@@ -1,7 +1,7 @@
 #include "../include/coroutine.h"
 #include <iostream>
 
-using namespace CTT;
+using namespace Util;
 
 int main()
 {

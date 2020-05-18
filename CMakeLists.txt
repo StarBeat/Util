@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 #携程封装+线程池封装+timer
-project(CTT)# LANGUAGES cxx)
+project(Util)# LANGUAGES cxx)
 add_definitions(-std=c++11)
 
 #ADD_SUBDIRECTORY(src bin)

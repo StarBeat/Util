@@ -1,8 +1,11 @@
 .xmake/
+.vs/
+*.vcxproj
+*.sln
+*.vcxproj.filters
+
 build/
+vs2019/
 CMakeFiles/
-./CMakeCache.txt
-./*.cmake
-test/*.cmake
-test/*.vcxproj
-test/*.vcxproj.filters
+CMakeCache.txt
+*.cmake

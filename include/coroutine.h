@@ -2,7 +2,7 @@
 #include <tuple>
 #include <functional>
 #include "coroutine_impl.hpp"
-namespace CTT
+namespace Util
 {
 #define DLL_PUBLIC __declspec(dllexport)
 
