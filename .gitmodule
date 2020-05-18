@@ -1,0 +1,3 @@
+[submodule "NanoLog"]
+	path = 3rd
+	url = https://github.com/StarBeat/NanoLog.git
