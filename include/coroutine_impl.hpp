@@ -3,18 +3,17 @@
 #include <functional>
 #include <vector>
 #include <list>
+#include "Defines.h"
 #ifndef STACKSIZE
 #define STACKSIZE (1024<<10)
 #endif
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#if defined(__WIN)
 // windows
 #include <Windows.h>
-#define __WIN
-#elif defined(__linux__) || defined(__linux)
+#elif defined(__LIN)
 // linux
 #include <ucontext.h>
 #include <cstring>
-#define __LIN 1
 #endif
 
 using co_id = uint32_t;

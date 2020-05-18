@@ -3,8 +3,12 @@
 *.vcxproj
 *.sln
 *.vcxproj.filters
+*.vcxproj.user
 
+*.dir
+Win32/
 build/
+test/bin
 vs2019/
 CMakeFiles/
 CMakeCache.txt
