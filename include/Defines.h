@@ -9,9 +9,13 @@
 #endif
 
 #if __WIN
-#if _MSVC_LANG
+#ifdef _EXPORT
+#define DLL_PUBLIC __declspec(dllexport)
 #else
-#define __CPP20 0
-#endif //  __cplusplus
-#define __CPP20 0
+#define DLL_PUBLIC __declspec(dllimport)
+#endif
+#define DLL_PRIVATE
+#elif __LIN
+#define DLL_PUBLIC   __attribute__ ((visibility("default")))
+#define DLL_PRIVATE __attribute__ ((visibility("hidden")))
 #endif // __WIN

@@ -4,8 +4,6 @@
 #include "coroutine_impl.hpp"
 namespace Util
 {
-#define DLL_PUBLIC __declspec(dllexport)
-
 struct coroutine_t
 {
 	co_id id;

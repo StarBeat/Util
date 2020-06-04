@@ -1,5 +1,6 @@
 .xmake/
 .vs/
+.idea/
 *.vcxproj
 *.sln
 *.vcxproj.filters
@@ -8,6 +9,7 @@
 *.dir
 Win32/
 build/
+Debug/
 test/bin
 vs2019/
 CMakeFiles/
