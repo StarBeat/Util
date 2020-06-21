@@ -13,7 +13,7 @@ set(NODE_TARGET x86)
 endif()
 
 ADD_SUBDIRECTORY(include)
-include_directories(./include)
+include_directories(./include ../3rd/zmp/include)
 
 set(ARCHIVE_OUTPUT_DIRECTORY "./bin")
 set(RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")

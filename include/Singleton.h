@@ -15,7 +15,7 @@ protected:
 	}
 public:
 	
-	~Singleton() = default;
+	virtual ~Singleton() = default;
 	static T* GetInstance() { return instance; }
 };
 }
