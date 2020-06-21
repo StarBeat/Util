@@ -1,10 +1,9 @@
 #pragma once
 #include "Defines.h"
-#include <string>
-namespace Util
-{
+
 #if __WIN
 #include <Windows.h>
+#include <string>
 #    define LIB_HANDLE hInstance
 #    define LIB_LOAD( a ) LoadLibraryEx( a, NULL, 0 ) // we can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
 #    define LIB_GETSYM( a, b ) GetProcAddress( a, b )
@@ -15,6 +14,8 @@ typedef struct HINSTANCE__* hInstance;
 #elif __LIN
 //todo
 #endif // __WIN
+namespace Util
+{
 class LibEntity
 {
 protected:

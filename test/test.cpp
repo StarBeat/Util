@@ -53,12 +53,12 @@ int main()
 					  0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10 };
 	uint8_t _in_[64];
 	auto aes = EncryptionManager::GetInstance()->aes;
-	aes->SetKey(key);
-	aes->Encrypt(in, sizeof(in) / sizeof(in[0]));
+	aes->setKey(key);
+	aes->encrypt(in, sizeof(in) / sizeof(in[0]));
 	if (0 == memcmp((char*)in, (char*)out, 64))
 		printf("SUCCESS!\n");
 	memcpy(_in_, in, 64);
-	aes->Decrypt(_in_, 64);
+	aes->decrypt(_in_, 64);
 	if (0 == memcmp((char*)_in_, (char*)_in, 64))
 		printf("SUCCESS!\n");
 	//aes->Decrypt(out, sizeof(out) / sizeof(out[0]));
@@ -73,8 +73,8 @@ int main()
 		a[j++] = i;
 	}
 	memcpy(b, a, len);
-	aes->Encrypt(a, len);
-	aes->Decrypt(a, len);
+	aes->encrypt(a, len);
+	aes->decrypt(a, len);
 	std::string ds((char*)a);
 
 	if (0 == memcmp((char*)a, (char*)b, len))

@@ -3,7 +3,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 
 project(Util)# LANGUAGES cxx)
-add_definitions(-std=c++11)
+SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+add_compile_options(-std=c++11)
+
 if(CMAKE_CL_64)    #CMAKE的内建变量，如果是true，就说明编译器的64位的，自然可以编译64bit的程序
 set(ADDRESS_MODEL 64)
 set(NODE_TARGET x64)
@@ -13,7 +15,8 @@ set(NODE_TARGET x86)
 endif()
 
 ADD_SUBDIRECTORY(include)
-include_directories(./include ../3rd/zmp/include)
+include_directories(./include)
+LINK_DIRECTORIES(3rd/zmq/lib bin/Debug)
 
 set(ARCHIVE_OUTPUT_DIRECTORY "./bin")
 set(RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")

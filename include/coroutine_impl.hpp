@@ -16,6 +16,8 @@
 #include <cstring>
 #endif
 
+namespace Util 
+{
 using co_id = uint32_t;
 
 enum Status
@@ -347,4 +349,4 @@ inline Status _qureystatus(co_id id)
 	assert(ctx != nullptr);
 	return ctx->Status();
 }
-
+}

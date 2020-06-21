@@ -6,7 +6,7 @@ void AesEncryption::setIv()
 	AES_ctx_set_iv(&ctx, iv);
 }
 
-void AesEncryption::SetKey(uint8_t* key)
+void AesEncryption::setKey(uint8_t* key)
 {
 	AES_init_ctx(&ctx, key);
 #if CBC || CTR
@@ -14,7 +14,7 @@ void AesEncryption::SetKey(uint8_t* key)
 #endif
 }
 
-void AesEncryption::Decrypt(uint8_t* buf, int len)
+void AesEncryption::decrypt(uint8_t* buf, int len)
 {
 #if CBC
 	AES_CBC_decrypt_buffer(&ctx, buf, len);
@@ -26,7 +26,7 @@ void AesEncryption::Decrypt(uint8_t* buf, int len)
 
 }
 
-void AesEncryption::Encrypt(uint8_t* buf, int len)
+void AesEncryption::encrypt(uint8_t* buf, int len)
 {
 #if CBC
 	AES_CBC_encrypt_buffer(&ctx, buf, len);
