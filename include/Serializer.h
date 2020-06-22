@@ -5,6 +5,8 @@
 #include "Defines.h"
 namespace Util
 {
+using std::initializer_list;
+
 class DLL_PUBLIC ByteStream final
 {
 public:
@@ -15,8 +17,8 @@ public:
 	size_t capacity() { return buffer.capacity(); }
 	const char* data() { return &buffer[0]; }
 	size_t size() { return buffer.size(); }
-	const char* current() { return &buffer[index]; }
-	void offset(int o) { index += o; }
+	const char* current() { return &buffer[index == size() ? index -1: index]; }
+	void offset(int o) { index += o;}
 	void clear() { buffer.clear(); }
 	void reset() { index = 0; }
 	bool canRead(size_t len) { return index + len <= size(); }
@@ -69,6 +71,13 @@ public:
 	template<typename T>
 	Serializer& operator>>(T& t)
 	{
+		oss(t);
+		return *this;
+	}
+
+	template<typename T>
+	void oss(T& t)
+	{
 		size_t len = sizeof T;
 		char* tmp = new char[len];
 		if (_io.canRead(len))
@@ -78,11 +87,27 @@ public:
 			t = *reinterpret_cast<T*>(&tmp[0]);
 		}
 		delete[] tmp;
-		return *this;
+	}
+
+	template<>
+	void oss(std::string& t)
+	{
+		char l[sizeof(size_t)];
+		memcpy(l, _io.current(), sizeof(size_t));
+		size_t len = *reinterpret_cast<size_t*>(&l[0]);
+		_io.offset(sizeof(size_t));
+		t.insert(t.begin(), _io.current(), _io.current() + len);
+		_io.offset(len);
 	}
 
 	template<typename T>
 	Serializer& operator<<(T t)
+	{
+		iss(t);
+		return *this;
+	}
+	template<typename T>
+	void iss(T t)
 	{
 		int len = sizeof T;
 		char* tmp = new char[len];
@@ -90,36 +115,28 @@ public:
 		memcpy(tmp, p, len);
 		_io.insert(tmp, len);
 		delete[] tmp;
-		return *this;
 	}
 
 	template<>
-	Serializer& operator<<(std::string t)
+	void iss(const char* t)
+	{
+		iss(std::string(t));
+	}
+
+	template<>
+	void iss(std::string t)
 	{
 		size_t len = t.size();
 		char* p = reinterpret_cast<char*>(&len);
 		_io.insert(p, sizeof size_t);
+
+		if (len == 0) return;
 		char* tmp = new char[len];
 		memcpy(tmp, t.data(), len);
 		_io.insert(tmp, len);
 		delete tmp;
-		return *this;
-
 	}
 
-	template<>
-	Serializer& operator>>(std::string& t)
-	{
-		size_t si = sizeof(size_t);
-		char* l = new char[si];
-		memcpy(l, _io.current(), si);
-		size_t len = *reinterpret_cast<uint16_t*>(&l[0]);
-		_io.offset(si);
-		delete l;
-		t.insert(t.begin(), _io.current(), _io.current() + len);
-		_io.offset(len);
-		return *this;
-	}
 private:
 	ByteStream _io;
 };

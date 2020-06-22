@@ -1,6 +1,5 @@
 #pragma once
 #include "Serializer.h"
-#include "zmq.hpp"
 #include "Defines.h"
 #include <string>
 #include <functional>
@@ -8,6 +7,9 @@
 using std::string;
 namespace Util
 {
+class SimpleNet;
+struct Message;
+
 template<typename T>
 struct type_xx { typedef T type; };
 
@@ -71,13 +73,11 @@ public:
 
 	void asClient(string& ip, int port);
 	void asServer(int port);
-	void sendNoblock(zmq::message_t& msg);
-	void send(zmq::message_t& msg);
-	void recvNoblock(zmq::message_t& msg);
-	void recv(zmq::message_t& msg);
-	void setTimeout(size_t ms){ _socket->setsockopt(ZMQ_RCVTIMEO, ms); }
+
+	void send(Message* msg);
+	void recv(Message** msg);
 	void serverRun();
-	void upDate();
+	void update();
 public:
 
 	template<typename F>
@@ -162,8 +162,8 @@ private:
 		call_helper<R>(func, args);
 	}
 	std::unordered_map<std::string, std::function<void(const char*, int)>> _handlers;
-	zmq::context_t m_context;
-	std::unique_ptr<zmq::socket_t, std::function<void(zmq::socket_t*)>> _socket;
 	CSType _type;
+#pragma warning (disable: 4430) 
+	SimpleNet* _net;
 };
 }

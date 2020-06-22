@@ -1,14 +1,14 @@
 set(SRC_LIST test.cpp)
 
-ADD_EXECUTABLE(test ${SRC_LIST})
+ADD_EXECUTABLE(testes ${SRC_LIST})
 set(LIBS Util)
 
 MESSAGE(STATUS "liblist " ${LIBS})
 
-TARGET_LINK_LIBRARIES(test ${LIBS})
-#set_property(TARGET test PROPERTY CXX_STANDARD 14)
+TARGET_LINK_LIBRARIES(testes ${LIBS})
+#set_property(TARGET testes PROPERTY CXX_STANDARD 14)
 
-set_target_properties(test PROPERTIES FOLDER "test")
+set_target_properties(testes PROPERTIES FOLDER "test")
 
 #set_target_properties(test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 

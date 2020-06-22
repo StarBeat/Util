@@ -1,6 +1,8 @@
 #include "Rpc.h"
 #include <sstream>
 #include <thread>
+#include "xnet.h"
+
 namespace Util
 {
 using std::ostringstream;
@@ -10,44 +12,34 @@ Rpc::Rpc()
 
 Rpc::~Rpc()
 {
+	_net->shutdown();
+	delete _net;
 }
 
 void Rpc::asClient(string& ip, int port) 
 {
 	_type = CSType::RPC_Client;
-	_socket = std::unique_ptr<zmq::socket_t, std::function<void(zmq::socket_t*)>>(new zmq::socket_t(m_context, ZMQ_REQ), [](zmq::socket_t* sock) { sock->close(); delete sock; sock = nullptr; });
-	ostringstream os;
-	os << "tcp://" << ip << ":" << port;
-	_socket->connect(os.str());
+	_net = new SimpleNet(1);
+	_net->connect(ip, port);
+	_net->run();
 }
 
 void Rpc::asServer(int port)
 {
 	_type = CSType::RPC_Server;
-	_socket = std::unique_ptr<zmq::socket_t, std::function<void(zmq::socket_t*)>>(new zmq::socket_t(m_context, ZMQ_REP), [](zmq::socket_t* sock) { sock->close(); delete sock; sock = nullptr; });
-	ostringstream os;
-	os << "tcp://*:" << port;
-	_socket->bind(os.str());
+	_net = new SimpleNet(64);
+	_net->listen("", port);
+	_net->run();
 }
 
-void Rpc::sendNoblock(zmq::message_t& msg)
+void Rpc::send(Message* msg)
 {
-	_socket->send(msg, ZMQ_DONTWAIT);
+	_net->send(msg->id, msg);
 }
 
-void Rpc::send(zmq::message_t& msg)
+void Rpc::recv(Message** msg)
 {
-	_socket->send(msg);
-}
-
-void Rpc::recvNoblock(zmq::message_t& msg)
-{
-	_socket->recv(&msg, ZMQ_DONTWAIT);
-}
-
-void Rpc::recv(zmq::message_t& msg)
-{
-	_socket->recv(&msg);
+	_net->recv(msg);
 }
 
 void Rpc::serverRun()
@@ -60,11 +52,11 @@ void Rpc::serverRun()
 		{
 			while (true)
 			{
-				zmq::message_t msg;
-				recv(msg);
-				ByteStream bs((char*)msg.data(), msg.size());
+				Message* msg = nullptr;
+				recv(&msg);
+				ByteStream bs((char*)msg->data, msg->size);
 				Serializer ds(bs);
-
+				_net->recycleMessage(msg);
 				std::string funcname;
 				ds >> funcname;
 				call_(funcname, ds.current(), ds.size());
@@ -73,24 +65,25 @@ void Rpc::serverRun()
 	t.detach();
 }
 
-void Rpc::upDate()
+void Rpc::update()
 {
-	zmq::message_t msg;
-	recv(msg);
-	if (msg.size() == 0)
+	Message* msg = nullptr;
+	recv(&msg);
+	if (msg == nullptr)
 		return;
-	ByteStream bs((char*)msg.data(), msg.size());
+	ByteStream bs((char*)msg->data, msg->size);
 	Serializer ds(bs);
-
+	_net->recycleMessage(msg);
 	std::string funcname;
 	ds >> funcname;
-	call_(funcname, ds.current(), ds.size());
+	call_(funcname, ds.current(), ds.size() - funcname.size());
 }
 
 void Rpc::call_(std::string name, const char* data, int len)
 {
 	if (_handlers.find(name) == _handlers.end())
 	{
+		return;
 	}
 	auto fun = _handlers[name];
 	fun(data, len);
@@ -98,9 +91,11 @@ void Rpc::call_(std::string name, const char* data, int len)
 
 void Rpc::net_call(Serializer& ds)
 {
-	zmq::message_t request(ds.size() + 1);
-	memcpy(request.data(), ds.data(), ds.size());
-	send(request);
+	Message* msg  = _net->getMessage();
+	msg->id = 0;
+	msg->size = ds.size();
+	memcpy(msg->data + sizeof(uint16_t), ds.data(), ds.size());
+	send(msg);
 	ds.clear();
 }
 

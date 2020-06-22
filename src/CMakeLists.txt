@@ -4,6 +4,7 @@ file(GLOB SRC_LIST ./*/*.cpp)
 file(GLOB SRC_LIST ./*.cpp)
 IF (WIN32)
 	MESSAGE(STATUS "windows")
+	set(LIBS ws2_32)
 	IF(DEBUG)
 		file(GLOB LIBS ${RUNTIME_OUTPUT_DIRECTORY}/Debug/*.lib)
 	ENDIF()
@@ -18,7 +19,7 @@ set(CMAKE_CXX_FLAGS "-D_EXPORT")
 get_property(HEADERS_LIST GLOBAL PROPERTY "HEADERS_LIST" )
 
 add_library(Util SHARED ${SRC_LIST} ${HEADERS_LIST})
-set(LIBS)
+
 
 TARGET_LINK_LIBRARIES(Util ${LIBS})
 

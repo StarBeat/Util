@@ -7,6 +7,7 @@ namespace Util
 {
 using dllInstall = void(*)();
 using dllUninstall = void(*)();
+template<>
 PluginsManager* Singleton<PluginsManager>::instance = new PluginsManager();
 
 PluginsManager::PluginsManager()
