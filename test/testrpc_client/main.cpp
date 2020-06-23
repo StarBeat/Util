@@ -7,8 +7,9 @@ using namespace Util;
 
 using namespace std;
 
+void bindFunc(int id);
+Rpc client(bindFunc);
 
-Rpc client;
 
 
 void foo_1()
@@ -48,24 +49,28 @@ public:
 			"PersonInfo" << s.age << "+" << s.name << "+" << s.height << endl;
 	}
 };
+
+void bindFunc(int id)
+{
+	client.bind(id, "foo_1", foo_1);
+	client.bind(id, "foo_2", foo_2);
+	ClassMem s;
+	client.bind(id, "foo_3", &ClassMem::bar, &s);
+	client.bind(id, "foo_4", foo_4);
+}
+
 int main()
 {
 	string ip = "127.0.0.1";
 	client.asClient(ip, 1234);
 
-	client.bind("foo_1", foo_1);
-	client.bind("foo_2", foo_2);
-	client.bind("foo_4", foo_4);
-	ClassMem s;
-	client.bind("foo_3", &ClassMem::bar, &s);
 	std::cout << "clientRun: " << std::endl;
 	PersonInfo  dd = { 10, "rpc", 170 };
 	while (true)
 	{
 		client.update();
-	//	foo_1();
 		//client.upDate();
-		//client.call("foo_3", 10, "rpc", 100, dd);
+		client.call("foo_3", 10, "rpc", 100, dd);
 		client.call("foo_4",11, "rpc", 1.56565, true);
 		client.call("foo_1");
 		client.update();

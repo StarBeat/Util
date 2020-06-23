@@ -29,9 +29,20 @@ namespace Util
 struct DLL_PUBLIC Message
 {
 	uint16_t size;
-	uint16_t id;
-	char data[255];
+	int32_t id;
+	char data[256];
 	~Message() { size = 0;}
+public:
+	///转发
+	void rawwrite(const char* s, size_t size)
+	{
+		memcpy(data, s, size);
+	}
+	//外部写入数据，保留分包长度
+	void write(const char* s, size_t size) 
+	{
+		memcpy(data + sizeof(uint8_t), s, size);
+	}
 private:
 	friend class SimpleNet;
 	friend class Connection;
@@ -49,7 +60,9 @@ public:
 	void recv(Message**);
 	Connection* bindNotify(std::function<void(Message* msg)> notify);
 private:
+	int spliceData(Message* msg, uint8_t lack);
 	void onData(Message*);
+	Message* getFreeMessage();
 private:
 	int _id;
 	SOCKET _socket;
@@ -58,6 +71,7 @@ private:
 	Queue<Message*> _sendque;
 	Queue<Message*> _recvque;
 	std::function<void(Message* msg)> _notify;
+	bool _needSplice = false;
 	
 	friend class SimpleNet;
 };
@@ -95,6 +109,10 @@ private:
 		{
 			for (size_t i = 0; i < _connections.size(); i++)
 			{
+				if (_connections.size() == 0)
+				{
+					break;
+				}
 				if (-1 == _connections[i]->_id)
 				{
 					_connections.erase(_connections.begin() + i);

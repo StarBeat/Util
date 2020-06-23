@@ -3,7 +3,11 @@
 using namespace Util;
 using namespace std;
 
-Rpc server;
+void bindFunc(int id);
+class ClassMem;
+struct PersonInfo;
+
+Rpc server(bindFunc);
 
 
 void foo_1() 
@@ -14,11 +18,7 @@ void foo_1()
 void foo_2(int arg1)
 {
 	cout << arg1 << endl;
-}
-
-void foo_4(int arg1, std::string s, double d, bool b)
-{
-	cout << arg1 << s << d << b <<endl;
+	server.call("foo_4", 11, "rpc", 1.56565, true);
 }
 
 struct PersonInfo
@@ -27,15 +27,23 @@ struct PersonInfo
 	std::string name;
 	float height;
 
-	friend Serializer& operator >> (Serializer & in, PersonInfo & d) {
+	friend Serializer& operator >> (Serializer& in, PersonInfo& d) {
 		in >> d.age >> d.name >> d.height;
 		return in;
 	}
-	friend Serializer& operator << (Serializer & out, PersonInfo d) {
+	friend Serializer& operator << (Serializer& out, PersonInfo d) {
 		out << d.age << d.name << d.height;
 		return out;
 	}
 };
+
+void foo_4(int arg1, std::string s, double d, bool b)
+{
+	cout << arg1 << s << d << b <<endl;
+	server.call("foo_3", 10, "rpc", 100, PersonInfo{ 10, "rpc", 170 });
+}
+
+
 
 class ClassMem
 {
@@ -46,18 +54,24 @@ public:
 			"PersonInfo"<< s.age << "+" << s.name<<"+" << s.height<< endl;
 	}
 };
+
+void bindFunc(int id)
+{
+	server.bind(id, "foo_1", foo_1);
+	server.bind(id, "foo_2", foo_2);
+	ClassMem s;
+	server.bind(id, "foo_3", &ClassMem::bar, &s);
+	server.bind(id, "foo_4", foo_4);
+}
 int main()
 {
 	server.asServer(1234);
-	server.bind("foo_1", foo_1);
-	server.bind("foo_2", foo_2);
-	ClassMem s;
-	server.bind("foo_3", &ClassMem::bar, &s);
-	server.bind("foo_4", foo_4);
+
 	std::cout << "serverRun: " << std::endl;
 	while (true)
 	{
 		server.update();
 		 _sleep(10);
+		 server.call("foo_2", 10);
 	}
 }

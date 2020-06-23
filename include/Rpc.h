@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
-using std::string;
+#include <list>
 namespace Util
 {
 class SimpleNet;
@@ -67,29 +67,40 @@ public:
 		RPC_Client,
 		RPC_Server
 	};
-
-	Rpc();
+	const static int SERVERID = -2;
+	const static int DEFAULT_BINDID = -1;
+	Rpc(std::function<void(int)> bindEnty);
 	~Rpc();
 
-	void asClient(string& ip, int port);
+	void asClient(std::string& ip, int port);
 	void asServer(int port);
+
+	void shutdown();
 
 	void send(Message* msg);
 	void recv(Message** msg);
 	void serverRun();
 	void update();
 public:
-
+	void unbind(int id);
 	template<typename F>
-	void bind(std::string name, F func)
+	void bind(int id, std::string name, F func)
 	{
-		_handlers[name] = std::bind(&Rpc::callproxy<F>, this, func, std::placeholders::_1, std::placeholders::_2);
+		if (_handlers.find(id) == _handlers.end())
+		{
+			_handlers[id] = std::unordered_map < std::string, proxyfunc>();
+		}
+		_handlers[id][name] = std::bind(&Rpc::callproxy<F>, this, func, std::placeholders::_1, std::placeholders::_2);
 	}
 
 	template<typename F, typename S>
-	void bind(std::string name, F func, S* s)
+	void bind(int id, std::string name, F func, S* s)
 	{
-		_handlers[name] = std::bind(&Rpc::callproxy<F, S>, this, func, s, std::placeholders::_1, std::placeholders::_2);
+		if (_handlers.find(id) == _handlers.end())
+		{
+			_handlers[id] = std::unordered_map < std::string, proxyfunc>();
+		}
+		_handlers[id][name] = std::bind(&Rpc::callproxy<F, S>, this, func, s, std::placeholders::_1, std::placeholders::_2);
 	}
 
 	template<typename... Params>
@@ -98,20 +109,69 @@ public:
 		args_type args = std::make_tuple(ps...);
 
 		Serializer ds;
+		if (_type == CSType::RPC_Server)
+		{
+			for (auto id : _ids)
+			{
+				ds << name;
+				ds << SERVERID;
+				package_params(ds, args);
+				net_call(ds, id);
+				ds.clear();
+			}
+			return;
+		}
 		ds << name;
+		ds << 0;
 		package_params(ds, args);
-		return net_call(ds);
+		net_call(ds, 0);
 	}
 
 	void call(std::string name) {
 		Serializer ds;
+		if (_type == CSType::RPC_Server)
+		{
+			for (auto id : _ids)
+			{
+				ds << name;
+				ds << SERVERID;
+				net_call(ds, id);
+				ds.clear();
+			}
+			return;
+		}
 		ds << name;
-		return net_call(ds);
+		ds << 0;
+		net_call(ds, 0);
 	}
-private:
-	void call_(std::string name, const char* data, int len);
 
-	void net_call(Serializer& ds);
+private:
+	/// single_call for server
+	template<typename... Params>
+	void single_call(int id, std::string name, Params... ps) {
+		using args_type = std::tuple<typename std::decay<Params>::type...>;
+		args_type args = std::make_tuple(ps...);
+		Serializer ds;
+		ds << name;
+		ds << SERVERID;//source
+		package_params(ds, args);
+		net_call(ds, id);
+	}
+	void single_call(int id, std::string name)
+	{
+		Serializer ds;
+		ds << name;
+		ds << SERVERID;
+		net_call(ds, id);
+	}
+	
+	void connect(int id);
+	void disconnect(int id);
+	
+	void call_(int id, std::string name, const char* data, int len);
+
+	void net_call(Serializer& ds, int id);
+	
 
 
 	template<typename F>
@@ -161,7 +221,10 @@ private:
 
 		call_helper<R>(func, args);
 	}
-	std::unordered_map<std::string, std::function<void(const char*, int)>> _handlers;
+	using proxyfunc = std::function<void(const char*, int)>;
+	std::unordered_map<int, std::unordered_map<std::string, proxyfunc>> _handlers;
+	std::list<int> _ids;
+	std::function<void(int)> _bindEnty;
 	CSType _type;
 #pragma warning (disable: 4430) 
 	SimpleNet* _net;

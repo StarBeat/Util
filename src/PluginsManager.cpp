@@ -59,6 +59,7 @@ IPlugin* PluginsManager::getPlugin(const std::string name)
 	{
 		return it->second;
 	}
+	return nullptr;
 }
 
 LibEntity* PluginsManager::load(const std::string name)

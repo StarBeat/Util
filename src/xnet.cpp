@@ -89,7 +89,7 @@ namespace Util
 		if (WSAStartup(WINSOCK_VERSION, &wsaData) != 0)
 		{
 			WSACleanup();
-			assert(false, "初始化socket失败");
+			assert(false);
 		}
 #endif
 	}
@@ -187,6 +187,7 @@ namespace Util
 		if (!msgPoll.empty())
 		{
 			msg = msgPoll.pop();
+			memset(msg->data, 0, 256);
 		}
 		else
 		{
@@ -202,12 +203,18 @@ namespace Util
 
 	void SimpleNet::send(int id, Message* msg)
 	{
-		_connections[id]->send(msg);
+		if (_connections.size() > id )
+		{
+			_connections[id]->send(msg);
+		}
 	}
 
 	void SimpleNet::recv(int id, Message** msg)
 	{
-		_connections[id]->recv(msg);
+		if (_connections.size() > id)
+		{
+			_connections[id]->recv(msg);
+		}
 	}
 
 	void SimpleNet::recv(Message** msg)
@@ -225,14 +232,15 @@ namespace Util
 	}
 	void Connection::update()
 	{
-		static char p[sizeof(uint16_t)];
+		static char p[sizeof(uint8_t)];
+
 		while (!_sendque.empty())
 		{
 			auto msg = _sendque.pop();
 			int rt = 0;
-			uint16_t len = msg->size + sizeof uint16_t,  offset =0;
+			uint8_t len = msg->size + sizeof uint8_t,  offset =0;
 			char* p = reinterpret_cast<char*>(&len);
-			memcpy(msg->data, p, sizeof uint16_t);
+			memcpy(msg->data, p, sizeof uint8_t);
 			do
 			{
 				assert(len != 0&& offset<=255);
@@ -255,21 +263,15 @@ namespace Util
 
 		//if (socketReady(_socket))
 		{
-			Message* msg;
-			if (!msgPoll.empty())
-			{
-				msg = msgPoll.pop();
-			}
-			else
-			{
-				msg = new Message();
-			}
+			Message* msg = getFreeMessage();
 			int rt = ::recv(_socket, (char*)msg->data, 255,0);
 			if (rt < 1)
 			{
 				if (rt == 0)
 				{
+					std::cout << "对端关闭连接" << std::endl;
 					disconnect();
+					return;
 				}
 				else if(!isWouldBlock())
 				{
@@ -279,44 +281,85 @@ namespace Util
 				msgPoll.push(msg);
 				return;
 			}
-			memcpy(p, msg->data, sizeof(uint16_t));
-			uint16_t len = *reinterpret_cast<uint16_t*>(&p[0]);
-			uint16_t offet = 0;
+			std::cout << "recv len:" << rt << std::endl;
+
+			uint8_t spliceOffet = 0;
+			if (_needSplice)
+			{
+				msg->size = rt;
+				int over = spliceData(msg, 0);
+				if (over <= 0)
+				{
+					msgPoll.push(msg);
+					return;
+				}
+				spliceOffet = rt - over;
+				rt = over;
+			}
+
+			uint8_t len = 0;
+			uint8_t offet = spliceOffet;
+
+			memcpy(p, msg->data + spliceOffet, sizeof(uint8_t));
+			len = *reinterpret_cast<uint8_t*>(&p[0]);
+			if (len > 256 || len == 0)
+			{
+				assert(0);
+			}
+			
 			if (len < rt)
 			{
-				while(len <= rt)
+				while(len <= rt)//拆包
 				{
-					Message* sub;
-					if (!msgPoll.empty())
-					{
-						sub = msgPoll.pop();
-					}
-					else
-					{
-						sub = new Message();
-					}
-					memcpy(sub->data, msg->data + offet + sizeof(uint16_t), len - sizeof(uint16_t));
+					Message* sub = getFreeMessage();
+					assert(len - sizeof(uint8_t) > 0);
+					memcpy(sub->data, msg->data + offet + sizeof(uint8_t), len - sizeof(uint8_t));
 					offet += len;
 					sub->id = _id;
-					sub->size = len;
+					sub->size = len - sizeof(uint8_t);
 					onData(sub);
 					rt -= len;
-					memcpy(p, msg->data + offet, sizeof(uint16_t));
-					len = *reinterpret_cast<uint16_t*>(&p[0]);
+					if (rt == 0)
+					{
+						len = 0;
+						break;
+					}
+					memcpy(p, msg->data + offet, sizeof(uint8_t));
+					len = *reinterpret_cast<uint8_t*>(&p[0]);
+					if (len > 500)
+					{
+						assert(0);
+					}
 				}
-				assert(rt == 0);
+
+				if (len > rt)//粘包
+				{
+					Message* sub = getFreeMessage();
+					sub->id = _id;
+					sub->size = len - sizeof(uint8_t);
+					memcpy(sub->data, msg->data + offet + sizeof(uint8_t), rt - sizeof(uint8_t));
+					spliceData(sub, len - rt);
+				}
+				msgPoll.push(msg);
 				return;
 			}
-			else if(len > rt)
+			else if (len > rt)
 			{
-
+				Message* sub = getFreeMessage();
+				sub->id = _id;
+				memcpy(sub->data, msg->data + sizeof(uint8_t), rt - sizeof(uint8_t));
+				sub->size = len - sizeof(uint8_t);
+				int over = spliceData(sub, len - rt);
+				msgPoll.push(msg);
+				return;
 			}
-			memmove(msg->data, msg->data + sizeof(uint16_t), rt);
+			memmove(msg->data, msg->data + sizeof(uint8_t), rt - sizeof(uint8_t));
 			msg->id = _id;
-			msg->size = rt - sizeof(uint16_t);
+			msg->size = rt - sizeof(uint8_t);
 			onData(msg);
 		}
 	}
+
 	void Connection::send(Message* msg)
 	{
 		_sendque.push(msg);
@@ -328,11 +371,42 @@ namespace Util
 			*msg = _recvque.pop();
 		}
 	}
+	
 	Connection* Connection::bindNotify(std::function<void(Message* msg)> notify)
 	{
 		_notify = notify;
 		return this;
 	}
+
+	int Connection::spliceData(Message* msg, uint8_t lack)
+	{
+		_needSplice = true;
+		static uint8_t _lack = 0;
+		static Message* _msg = nullptr;
+		if (_msg != nullptr && _lack != 0)
+		{
+			if (_lack <= msg->size)
+			{
+				memcpy(_msg->data, msg->data , _lack);
+				onData(_msg);
+				int l = msg->size - _lack;
+				_msg = nullptr;
+				_lack = 0;
+				_needSplice = false;
+				return l;
+			}
+			if (_lack > msg->size)
+			{
+				memcpy(_msg->data, msg->data, msg->size);
+				_lack -= msg->size;
+				return -1;
+			}
+		}
+		_lack = lack == 0 ? _lack : _lack + lack;
+		_msg = msg;
+		std::cout << "spliceData rt " << (int)_lack << std::endl;
+	}
+
 	void Connection::onData(Message* msg)
 	{
 		if (_notify.operator bool())
@@ -343,5 +417,19 @@ namespace Util
 		{
 			_recvque.push(msg);
 		}
+	}
+	Message* Connection::getFreeMessage()
+	{
+		Message* sub;
+		if (!msgPoll.empty())
+		{
+			sub = msgPoll.pop();
+			memset(sub->data, 0, 256);
+		}
+		else
+		{
+			sub = new Message();
+		}
+		return sub;
 	}
 }

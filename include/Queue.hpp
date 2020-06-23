@@ -47,16 +47,19 @@ public:
 
 	size_t size()
 	{
+		lock_guard l(_busy);
 		return queue<T>::size();
 	}
 
 	bool empty()
 	{
+		lock_guard l(_busy);
 		return queue<T>::empty();
 	}
 
 	void swap(queue<T>& _Right)
 	{
+		lock_guard l(_busy);
 		queue<T>::swap(_Right);
 	}
 	

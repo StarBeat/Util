@@ -19,6 +19,7 @@ public:
 	size_t size() { return buffer.size(); }
 	const char* current() { return &buffer[index == size() ? index -1: index]; }
 	void offset(int o) { index += o;}
+	size_t getindex() { return index; }
 	void clear() { buffer.clear(); }
 	void reset() { index = 0; }
 	bool canRead(size_t len) { return index + len <= size(); }
@@ -52,6 +53,7 @@ public:
 	~Serializer() = default;
 
 	size_t size() { return _io.size(); }
+	size_t lavesize() { return _io.size() - _io.getindex(); }
 	const char* data() { return _io.data(); }
 	const char* current() { return _io.current(); }
 	void reset() { _io.reset(); }
@@ -96,8 +98,16 @@ public:
 		memcpy(l, _io.current(), sizeof(size_t));
 		size_t len = *reinterpret_cast<size_t*>(&l[0]);
 		_io.offset(sizeof(size_t));
+		try
+		{
 		t.insert(t.begin(), _io.current(), _io.current() + len);
 		_io.offset(len);
+
+		}
+		catch (const std::exception&)
+		{
+			printf("");
+		}
 	}
 
 	template<typename T>
