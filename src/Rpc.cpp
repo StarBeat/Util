@@ -13,7 +13,7 @@ void Rpc::connect(int id)
 		call("connect", id);
 		for (auto i : _ids)
 		{
-			single_call(i, "connect", i);
+			single_call(id, "connect", i);
 		}
 		single_call(id, "connect", SERVERID);
 	}
