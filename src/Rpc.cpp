@@ -15,6 +15,7 @@ void Rpc::connect(int id)
 		{
 			single_call(id, "connect", i);
 		}
+		single_call(id, "connect", id);//通知接入者
 		single_call(id, "connect", SERVERID);
 		_bindEnty(SERVERID);//绑定自身
 	}
@@ -57,7 +58,7 @@ void Rpc::asClient(std::string& ip, int port)
 	_net = new SimpleNet(1);
 	_net->connect(ip, port);
 	_net->run();
-	call("connect", -1);
+	call(-1,"connect", -1);//这里的id无意义
 }
 
 void Rpc::asServer(int port)
