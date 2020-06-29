@@ -16,6 +16,7 @@ void Rpc::connect(int id)
 			single_call(id, "connect", i);
 		}
 		single_call(id, "connect", SERVERID);
+		_bindEnty(SERVERID);//绑定自身
 	}
 	_bindEnty(id);
 	_ids.push_back(id);
