@@ -71,6 +71,7 @@ public:
 	const static int DEFAULT_BINDID = -1;
 	Rpc(std::function<void(int)> bindEnty);
 	~Rpc();
+	bool isServer() { return _type == CSType::RPC_Server; }
 
 	void asClient(std::string& ip, int port);
 	void asServer(int port);
