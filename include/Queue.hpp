@@ -1,9 +1,7 @@
 #pragma once
-
 #include <queue>
 #include <atomic>
 #include <initializer_list>
-#include "Defines.h"
 
 using std::queue;
 using std::atomic;
@@ -12,10 +10,9 @@ using std::initializer_list;
 namespace Util
 {
 template<typename T>
-class DLL_PUBLIC Queue : protected queue<T>
+class Queue : protected queue<T>
 {
 public:
-
 
 	Queue() : queue<T>::queue()
 	{
@@ -66,6 +63,10 @@ public:
 	T& pop() 
 	{
 		lock_guard l(_busy);
+		if (queue<T>::empty())
+		{
+			return nullptr;
+		}
 		auto rt = queue<T>::front();
 		queue<T>::pop();
 		return rt;
@@ -74,11 +75,19 @@ public:
 	T& front()
 	{
 		lock_guard l(_busy);
+		if (queue<T>::empty())
+		{
+			return nullptr;
+		}
 		return queue<T>::front();
 	}
 	T& back()
 	{
 		lock_guard l(_busy);
+		if (queue<T>::empty())
+		{
+			return nullptr;
+		}
 		return queue<T>::back();
 	}
 private:
